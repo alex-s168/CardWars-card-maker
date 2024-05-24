@@ -1,9 +1,17 @@
-# Korge Hello World and Template
+## Card maker for CardWars by [y/BigHoles](https://www.youtube.com/@BigHoles)
 
-This is a Hello World and Template for the KorGe game engine. Using gradle with kotlin-dsl.
-You can open this project in IntelliJ IDEA by opening the folder or the build.gradle.kts file.
+![img.png](img.png)
 
-You can find this template at GitHub: <https://github.com/korlibs/korge-hello-world>
+## Building
+`./gradlew packageJvmFatJar`
 
+you can now find a executable jar file in build/libs/
 
-You can find the KorGE documentation here: <https://docs.korge.org/korge/>
+always use the jar files with the -all suffix
+
+## Usage
+- Drag and drop a image file into the center or click on it and select a file
+- Set properties
+- Edit text fields
+- Save
+- Export
