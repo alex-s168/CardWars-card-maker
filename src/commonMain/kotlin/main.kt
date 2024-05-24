@@ -13,6 +13,7 @@ import korlibs.korge.view.*
 import korlibs.math.geom.*
 import korlibs.render.*
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.*
 
 suspend fun main() = Korge(windowSize = Size(900, 800), backgroundColor = Colors["#2b2b2b"]) {
 	val sceneContainer = sceneContainer()
@@ -52,9 +53,15 @@ fun Double.goodToString(): String {
 class MyScene : Scene() {
 	override suspend fun SContainer.sceneMain() {
         addChild(uiHorizontalStack {
+            val onLoad = Signal<CardView.Stats>()
+
             val cv = cardView(gameWindow) {
                 hp = HP.part(a = 12.0, b = 0.0)
                 scale(2.0)
+
+                onLoad.add {
+                    decodeFrom(it)
+                }
             }
 
             addChild(uiVerticalStack {
@@ -65,6 +72,14 @@ class MyScene : Scene() {
                             onSetValue.add {
                                 cv.hp = cv.hp.copy(atk = it.value)
                             }
+                            onLoad.add {
+                                if (it.hp.atk == null) {
+                                    visible(false)
+                                } else {
+                                    visible(true)
+                                    value = it.hp.atk
+                                }
+                            }
                         }
                         val enable = uiCheckBox(text = "Top", checked = cv.hp.atk != null) {
                             onChange.add {
@@ -72,6 +87,12 @@ class MyScene : Scene() {
                                 cv.hp = if (it.checked) cv.hp.copy(atk = num.value)
                                 else cv.hp.copy(atk = null)
                             }
+                            onLoad.add {
+                                checked = it.hp.atk != null
+                            }
+                        }
+                        onLoad.add {
+                            visible(!it.hp.infinite)
                         }
                         addChild(enable)
                         addChild(num)
@@ -83,6 +104,14 @@ class MyScene : Scene() {
                             onSetValue.add {
                                 cv.hp = cv.hp.copy(hp = it.value)
                             }
+                            onLoad.add {
+                                if (it.hp.hp == null) {
+                                    visible(false)
+                                } else {
+                                    visible(true)
+                                    value = it.hp.hp
+                                }
+                            }
                         }
                         val enable = uiCheckBox(text = "Bottom", checked = cv.hp.hp != null) {
                             onChange.add {
@@ -90,6 +119,12 @@ class MyScene : Scene() {
                                 cv.hp = if (it.checked) cv.hp.copy(hp = num.value)
                                 else cv.hp.copy(hp = null)
                             }
+                            onLoad.add {
+                                checked = it.hp.hp != null
+                            }
+                        }
+                        onLoad.add {
+                            visible(!it.hp.infinite)
                         }
                         addChild(enable)
                         addChild(num)
@@ -100,6 +135,9 @@ class MyScene : Scene() {
                             top.visible(!it.checked)
                             bottom.visible(!it.checked)
                             cv.hp = cv.hp.copy(infinite = it.checked)
+                        }
+                        onLoad.add {
+                            checked = it.hp.infinite
                         }
                     }
 
@@ -137,15 +175,18 @@ class MyScene : Scene() {
                 val personality = UIHorizontalStack().apply {
                     addChild(uiVerticalStack {
                         forcedWidth = width * 2
-                        CardView.PERSONALITIES.forEach {
-                            addChild(uiCheckBox(text = it) {
+                        CardView.PERSONALITIES.forEach { p ->
+                            addChild(uiCheckBox(text = p) {
                                 onChange.add {
                                     if (it.checked) {
-                                        cv.personalities.add(it.text[0])
+                                        cv.personalities.add(p[0])
                                     } else {
-                                        cv.personalities.remove(it.text[0])
+                                        cv.personalities.remove(p[0])
                                     }
                                     cv.updatePersonalitiesAndPredictability()
+                                }
+                                onLoad.add {
+                                    checked = p[0] in it.personalities
                                 }
                             })
                         }
@@ -157,6 +198,9 @@ class MyScene : Scene() {
                                 cv.unpredictability = it.value.toInt()
                                 cv.updatePersonalitiesAndPredictability()
                             }
+                            onLoad.add {
+                                value = it.unpredictability.toDouble()
+                            }
                         })
                     })
                 }
@@ -167,8 +211,8 @@ class MyScene : Scene() {
                     fun buildKw(): View =
                         UIVerticalStack().apply {
                             forcedWidth = width * 2
-                            typeKws[cv.type]?.forEach {
-                                addChild(uiCheckBox(text = it) {
+                            typeKws[cv.type]?.forEach { kw ->
+                                addChild(uiCheckBox(text = kw) {
                                     onChange.add {
                                         if (it.checked) {
                                             cv.keywords.add(it.text)
@@ -176,6 +220,9 @@ class MyScene : Scene() {
                                             cv.keywords.remove(it.text)
                                         }
                                         cv.updateKeywords()
+                                    }
+                                    onLoad.add {
+                                        checked = kw in it.keywords
                                     }
                                 })
                             }
@@ -196,6 +243,10 @@ class MyScene : Scene() {
                             val new = buildKw()
                             pa.addChild(new)
                             kw = new
+                        }
+                        onLoad.add {
+                            selectedItem = it.type
+                            personality.visible(it.type == "Creature")
                         }
                     })
                     addChild(kw)
@@ -229,7 +280,9 @@ class MyScene : Scene() {
                             runBlockingNoSuspensions {
                                 gameWindow.openFileDialog(FileFilter("PNG files" to listOf("*.png")), write = true).firstOrNull()?.let { file ->
                                     val bmp = cv.renderToBitmap()
+                                    if (file.exists()) file.delete()
                                     file.writeBitmap(bmp, PNG)
+                                    gameWindow.alert("saved successfully!")
                                 }
                             }
                         }
@@ -247,7 +300,8 @@ class MyScene : Scene() {
                                         val json = zip.open("data.json", VfsOpenMode.READ)
                                             .readAllAsFastStream()
                                             .readStringz()
-                                        cv.decodeFromJson(json)
+                                        val data = Json.decodeFromString<CardView.Stats>(json)
+                                        onLoad(data)
                                     } catch (e: Exception) {
                                         println("fail: $e")
                                         gameWindow.alert("failed to load card")
