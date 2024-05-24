@@ -24,6 +24,8 @@ class CardView(
     val personalities = mutableListOf<Char>()
     var unpredictability = 0
 
+    val onChanged = Signal<CardView>()
+
     companion object {
         val TYPES = listOf(
             "Creature",
@@ -53,6 +55,7 @@ class CardView(
                 )
             }
             replaceChild(old, hpView)
+            onChanged(this@CardView)
         }
 
     var image: Bitmap = imageIn
@@ -61,6 +64,7 @@ class CardView(
             replaceChild(imgView, new)
             imgView = new
             field = value
+            onChanged(this@CardView)
         }
 
     private var imgView: View = mkImgView(imageIn)
@@ -181,21 +185,33 @@ class CardView(
             font = moreSugar.thin
             textSize = 15.0
             position(60, 275)
+            controller.onTextUpdated.add {
+                onChanged(this@CardView)
+            }
         }.also { nameView = it })
         addChild(multilineText(120.0, 40.0, placeholder = "Enter description here") {
             font = moreSugar.thin
             textSize = 11.0
             position(80, 294)
+            controller.onTextUpdated.add {
+                onChanged(this@CardView)
+            }
         }.also { descView = it })
         addChild(singlelineText(120.0, placeholder = "Creature") {
             font = moreSugar.thin
             textSize = 8.0
             position(80, 331)
+            controller.onTextUpdated.add {
+                onChanged(this@CardView)
+            }
         }.also { tagsView = it })
         addChild(singlelineText(60.0, placeholder = "~ author") {
             font = moreSugar.thin
             textSize = 9.0
             position(185, 345)
+            controller.onTextUpdated.add {
+                onChanged(this@CardView)
+            }
         }.also { authorView = it })
         addChild(hpView)
         addChild(kwListView)
@@ -211,12 +227,14 @@ class CardView(
         val new = keywordsListView()
         replaceChild(kwListView, new)
         kwListView = new
+        onChanged(this@CardView)
     }
 
     fun updatePersonalitiesAndPredictability() {
         val new = statsView()
         replaceChild(statsViewV, new)
         statsViewV = new
+        onChanged(this@CardView)
     }
 
     @Serializable
@@ -263,6 +281,8 @@ class CardView(
 
         updateKeywords()
         updatePersonalitiesAndPredictability()
+
+        onChanged(this@CardView)
     }
 
     fun decodeFromJson(json: String) {

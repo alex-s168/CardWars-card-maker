@@ -1,4 +1,5 @@
 import korlibs.image.bitmap.*
+import korlibs.image.color.*
 import korlibs.image.format.*
 import korlibs.io.async.*
 import korlibs.io.file.*
@@ -7,7 +8,6 @@ import korlibs.io.stream.*
 import korlibs.korge.ui.*
 import korlibs.korge.view.*
 import korlibs.render.*
-import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 
 class CardEditor(
@@ -15,8 +15,12 @@ class CardEditor(
     val showSaveLoadExport: Boolean,
 ): Container() {
     private val onLoad = Signal<CardView.Stats>()
+    private val onSave = Signal<VfsFile>()
 
     lateinit var cv: CardView
+
+    var changed: Boolean = false
+        private set
 
     suspend fun build(): CardEditor {
         cv = cardView(gameWindow) {
@@ -26,6 +30,10 @@ class CardEditor(
             onLoad.add {
                 decodeFrom(it)
             }
+        }
+
+        cv.onChanged.add {
+            changed = true
         }
 
         addChild(uiHorizontalStack {
@@ -261,6 +269,19 @@ class CardEditor(
                         })
                     })
                 }
+
+                addChild(text("Unsaved changes") {
+                    color = Colors.RED
+                    fontSize *= 2
+                    visible = false
+
+                    cv.onChanged.add {
+                        visible = true
+                    }
+                    onSave.add {
+                        visible = false
+                    }
+                })
             })
 
             addChild(cv)
@@ -273,15 +294,19 @@ class CardEditor(
         val tmp = tempVfs["CWSimTmp"]
         tmp.mkdirs()
 
-        tmp["img.png"].writeBitmap(cv.image, PNG)
-        tmp["data.json"].writeString(cv.encodeToJson())
-        kotlin.runCatching {
-            exportAsPNG(tmp["rendering.png"])
+        try {
+            tmp["img.png"].writeBitmap(cv.image, PNG)
+            tmp["data.json"].writeString(cv.encodeToJson())
+            kotlin.runCatching {
+                exportAsPNG(tmp["rendering.png"])
+            }
+            tmp.createZipFromTreeTo(file)
+
+            changed = false
+            onSave(file)
+        } finally {
+            tmp.deleteRecursively()
         }
-
-        tmp.createZipFromTreeTo(file)
-
-        tmp.deleteRecursively()
     }
 
     data class LoadResult(
