@@ -14,8 +14,8 @@ class CardEditor(
     val gameWindow: GameWindow,
     val showSaveLoadExport: Boolean,
 ): Container() {
-    private val onLoad = Signal<CardView.Stats>()
-    private val onSave = Signal<VfsFile>()
+    val onLoad = Signal<CardView.Stats>()
+    val onSave = Signal<VfsFile>()
 
     lateinit var cv: CardView
 
@@ -232,9 +232,7 @@ class CardEditor(
                         addChild(uiButton("Save") {
                             onPress.add {
                                 launch(gameWindow.coroutineDispatcher) {
-                                    val temp = tempVfs["CWCardMakerTemp.zip"]
-                                    saveToZip(temp)
-                                    save(gameWindow, temp)
+                                    save(gameWindow, this@CardEditor)
                                     gameWindow.alert("saved successfully!")
                                 }
                             }
@@ -245,7 +243,7 @@ class CardEditor(
                                 launch(gameWindow.coroutineDispatcher) {
                                     val temp = tempVfs["CWCardMakerTemp.png"]
                                     exportAsPNG(temp)
-                                    save(gameWindow, temp)
+                                    export(gameWindow, temp)
                                     gameWindow.alert("exported successfully!")
                                 }
                             }
@@ -288,25 +286,6 @@ class CardEditor(
         return this
     }
 
-    suspend fun saveToZip(file: VfsFile) {
-        val tmp = tempVfs["CWSimTmp"]
-        tmp.mkdirs()
-
-        try {
-            tmp["img.png"].writeBitmap(cv.image, PNG)
-            tmp["data.json"].writeString(cv.encodeToJson())
-            kotlin.runCatching {
-                exportAsPNG(tmp["rendering.png"])
-            }
-            tmp.createZipFromTreeTo(file)
-
-            changed = false
-            onSave(file)
-        } finally {
-            tmp.deleteRecursively()
-        }
-    }
-
     data class LoadResult(
         val rendering: Bitmap?
     )
@@ -332,5 +311,23 @@ class CardEditor(
         val bmp = cv.renderToBitmap()
         if (file.exists()) file.delete()
         file.writeBitmap(bmp, PNG)
+    }
+
+    suspend fun saveToZip(file: VfsFile) {
+        val tmp = tempVfs["CWSimTmp"]
+        tmp.mkdirs()
+
+        try {
+            tmp["img.png"].writeBitmap(cv.image, PNG)
+            tmp["data.json"].writeString(cv.encodeToJson())
+            runCatching {
+                exportAsPNG(tmp["rendering.png"])
+            }
+            tmp.createZipFromTreeTo(file)
+
+            onSave(file)
+        } finally {
+            tmp.deleteRecursively()
+        }
     }
 }
