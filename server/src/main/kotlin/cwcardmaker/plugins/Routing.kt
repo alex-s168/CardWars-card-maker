@@ -1,6 +1,7 @@
 package cwcardmaker.plugins
 
 import io.ktor.server.application.*
+import io.ktor.server.http.content.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -25,8 +26,12 @@ fun Application.configureRouting() {
             file.writeBytes(bytes)
             call.respondText("http://207.180.202.42:7070/file?name=$name")
         }
+        staticFiles(
+            "/maker",
+            File("../build/dist/js/productionExecutable")
+        )
         get("/") {
-            call.respondRedirect("http://207.180.202.42/cw-card-maker", permanent = true)
+            call.respondRedirect("maker")
         }
     }
 }
