@@ -26,12 +26,8 @@ fun Application.configureRouting() {
             file.writeBytes(bytes)
             call.respondText("http://207.180.202.42:7070/file?name=$name")
         }
-        staticFiles(
-            "/maker",
-            File("../build/dist/js/productionExecutable")
+        staticFiles("/",
+            File("../build/dist/js/productionExecutable/")
         )
-        get("/") {
-            call.respondRedirect("maker")
-        }
     }
 }
