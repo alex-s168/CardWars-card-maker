@@ -8,6 +8,7 @@ import io.ktor.server.routing.*
 import io.ktor.util.date.*
 import kotlinx.coroutines.*
 import java.io.*
+import java.nio.file.*
 import java.util.zip.*
 
 fun zipFiles(files: List<File>, out: File) {
@@ -59,8 +60,9 @@ fun Application.configureRouting() {
             withContext(Dispatchers.IO) {
                 val stream = call.receiveStream()
 
-                val jsonFile = File.createTempFile("cwcardmaker", ".json")
-                val pngFile = File.createTempFile("cwcardmaker", ".png")
+                val dir = Files.createTempDirectory("cwcardmaker").toFile()
+                val jsonFile = File(dir, "data.json")
+                val pngFile = File(dir, "img.png")
 
                 // read from stream until 0 into jsonFile and rest into png file
 
