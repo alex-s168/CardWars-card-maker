@@ -232,11 +232,10 @@ class CardEditor(
                         addChild(uiButton("Save") {
                             onPress.add {
                                 launch(gameWindow.coroutineDispatcher) {
-                                    gameWindow.openFileDialog(FileFilter("ZIP files" to listOf("*.zip")), write = true)
-                                        .firstOrNull()?.let { dest ->
-                                        saveToZip(dest)
-                                        gameWindow.alert("saved successfully!")
-                                    }
+                                    val temp = tempVfs["CWCardMakerTemp.zip"]
+                                    saveToZip(temp)
+                                    save(gameWindow, temp)
+                                    gameWindow.alert("saved successfully!")
                                 }
                             }
                         })
@@ -244,11 +243,10 @@ class CardEditor(
                         addChild(uiButton("Export") {
                             onPress.add {
                                 launch(gameWindow.coroutineDispatcher) {
-                                    gameWindow.openFileDialog(FileFilter("PNG files" to listOf("*.png")), write = true)
-                                        .firstOrNull()?.let { file ->
-                                        exportAsPNG(file)
-                                        gameWindow.alert("saved successfully!")
-                                    }
+                                    val temp = tempVfs["CWCardMakerTemp.png"]
+                                    exportAsPNG(temp)
+                                    save(gameWindow, temp)
+                                    gameWindow.alert("exported successfully!")
                                 }
                             }
                         })
