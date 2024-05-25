@@ -1,5 +1,5 @@
 ## Card maker for CardWars by [y/BigHoles](https://www.youtube.com/@BigHoles)
-
+[Web Version](http://207.180.202.42:7070/index.html)
 ![img.png](img.png)
 
 ## Building
