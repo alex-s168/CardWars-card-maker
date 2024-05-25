@@ -6,6 +6,8 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.date.*
+import io.ktor.utils.io.*
+import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.*
 import java.io.*
 import java.nio.file.*
@@ -58,7 +60,7 @@ fun Application.configureRouting() {
         }
         post("/save") {
             withContext(Dispatchers.IO) {
-                val stream = call.receiveStream()
+                val stream = call.receiveChannel()
 
                 val dir = Files.createTempDirectory("cwcardmaker").toFile()
                 val jsonFile = File(dir, "data.json")
@@ -66,20 +68,13 @@ fun Application.configureRouting() {
 
                 // read from stream until 0 into jsonFile and rest into png file
 
-                jsonFile.bufferedWriter().use { out ->
-                    while (stream.available() > 0) {
-                        val byte = stream.read()
-                        if (byte == 0)
-                            break
-                        out.write(byte)
-                    }
+                val jsonLen = stream.readIntLittleEndian()
+                jsonFile.outputStream().use {
+                    stream.copyTo(it, limit = jsonLen.toLong())
                 }
 
-                pngFile.bufferedWriter().use { out ->
-                    while (stream.available() > 0) {
-                        val byte = stream.read()
-                        out.write(byte)
-                    }
+                pngFile.outputStream().use {
+                    stream.copyTo(it)
                 }
 
                 // pack to zip
