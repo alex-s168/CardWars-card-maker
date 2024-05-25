@@ -1,19 +1,10 @@
 import korlibs.image.color.*
 import korlibs.image.font.*
-import korlibs.image.format.*
-import korlibs.io.async.*
-import korlibs.io.file.*
-import korlibs.io.file.std.*
-import korlibs.io.lang.*
-import korlibs.io.stream.*
 import korlibs.korge.*
 import korlibs.korge.scene.*
-import korlibs.korge.ui.*
 import korlibs.korge.view.*
 import korlibs.math.geom.*
-import korlibs.render.*
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.*
+import kotlinx.serialization.*
 
 suspend fun main() = Korge(windowSize = Size(900, 800), backgroundColor = Colors["#2b2b2b"]) {
 	val sceneContainer = sceneContainer()
